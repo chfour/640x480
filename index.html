@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>640x480</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: "Fira Sans", Arial, Helvetica, sans-serif;
+        }
+        input, #codearea, canvas {
+            border: 2px solid white;
+        }
+        #codearea, code, #error {
+            display: block;
+            font-family: "Fira Code", monospace;
+        }
+        #codearea {
+            margin-left: 1em;
+            background-color: transparent;
+            color: inherit;
+        }
+        #error {
+            color: rgb(255, 91, 91);
+            white-space: pre-wrap;
+        }
+        #gridwrap {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            grid-template-areas: "c h";
+        }
+        #gridwrap > h1 {
+            transform: rotate(90deg);
+            transform-origin: top left;
+            grid-area: h;
+            font-size: 3em;
+            font-weight: 900;
+            margin: 0 0 0 1em;
+            opacity: 0.5;
+            height: 0;
+        }
+        #gridwrap > canvas { grid-area: c; }
+        #controls { margin: 0.5em 0; }
+        button {
+            background-color: transparent;
+            color: white;
+            border: 1px solid white;
+        }
+        button:active { background-color: rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body>
+    <div id="gridwrap">
+        <h1>640x480</h1>
+        <canvas width="640" height="480" id="screen"></canvas>
+    </div>
+
+    <div id="controls">
+        <button id="run">run</button>
+        <button id="stop">stop</button>
+        <button id="loadexample">load random example</button>
+        <input type="checkbox" id="showfps" checked="true"> <label for="showfps">show FPS</label>
+    </div>
+
+    <pre style="display: none;"><code id="error"></code></pre>
+
+    <code>(x, y, t) => {</code>
+    <textarea id="codearea" cols="60" rows="10" spellcheck="false"></textarea>
+    <code>}</code>
+    
+    <script>
+        const utils = Object.freeze({
+            cmp: (v, t, e) => v>t-e && v<t+e, // compare: is v equal to t with margin e
+            choice: a => a[Math.random()*a.length<<0], // randomly choose from array a
+            fmod: (n, m) => (n%m)/m, // modulo with divide - returns 0..1
+            brect: (x, y, w, h) => x < w && y < h && x > 0 && y > 0, // make a rectangle or check if point is within w, h
+        });
+
+        const examples = [
+            "/* sine wave */ return this.cmp(y, (1+Math.sin(t + x/34))/2 * 480, 10)",
+            "/* vertical stripes */ return this.fmod(x, 64) > 0.5",
+            "/* horizontal stripes */ return this.fmod(y, 48) > 0.5",
+            "/* checkerboard */ s=64; return this.fmod(x, s) > 0.5 && this.fmod(y, s) > 0.5 || this.fmod(x, s) < 0.5 && this.fmod(y, s) < 0.5",
+            "/* noise */ return Math.random()",
+            "/* bouncing rectangle */ return this.brect((x - t*200%690)+50, y - (1-Math.abs(Math.sin(t*2)))*300-130, 50, 50)"
+        ];
+        
+        const codeArea = document.querySelector("textarea#codearea");
+        const errorOutput = document.querySelector("#error");
+
+        const showFps = document.querySelector("#showfps");
+
+        const screen = document.querySelector("canvas#screen");
+        const ctx = screen.getContext("2d");
+
+        ctx.font = "800 24px monospace";
+        ctx.fillStyle = "#896ac1";
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 4;
+
+        let requestHandle = null;
+        let startTimestamp = null;
+
+        const stop = () => {
+            if (requestHandle !== null) {
+                window.cancelAnimationFrame(requestHandle);
+                requestHandle = null;
+            }
+        }
+
+        const start = () => {
+            errorOutput.parentElement.style.display = "none";
+            stop();
+
+            let generator;
+            try {
+                generator = new Function("x", "y", "t", codeArea.value);
+            } catch (e) {
+                console.error(e);
+                errorOutput.parentElement.style.display = "block";
+                errorOutput.textContent = `exception:\n` + e.toString();
+                return;
+            }
+
+            let frame = 0;
+            let start, last;
+            const draw = (timestamp) => {
+                if (start === undefined) last = start = timestamp;
+                const elapsed = timestamp - start;
+                const timeDelta = timestamp - last;
+                const frameRate = 1000 / timeDelta;
+                frame++;
+                //frame%60==0&&console.log(frame);
+
+                ctx.clearRect(0, 0, 640, 480);
+
+                const image = ctx.createImageData(640, 480);
+                const imageData = image.data;
+                for (let i = 0; i < imageData.length; i += 4) {
+                    const px = i/4<<0
+                    const y = px/640<<0
+                    const x = px%640;
+                    const t = elapsed / 1000;
+                    
+                    //const v = Math.floor(Math.random()*255);
+                    let v;
+                    try {
+                        v = (generator.apply(utils, [x, y, t]) || 0);
+                    } catch (e) {
+                        console.error(e);
+                        errorOutput.parentElement.style.display = "block";
+                        errorOutput.textContent = `exception when applying for x=${x} y=${y} t=${t}:\n` + e.toString() + "\n" + e.stack;
+                        if (e.hasOwnProperty("lineNumber") && e.hasOwnProperty("columnNumber")) {
+                            codeArea.selectionStart = codeArea.value.split("\n").map(l => l.length+1).slice(e.lineNumber-2).reduce((n,a)=>n+a, 0)+e.columnNumber-1;
+                            codeArea.selectionEnd = codeArea.selectionStart + 1;
+                            console.debug(codeArea.selectionStart);
+                            codeArea.focus();
+                        }
+                        ctx.putImageData(image, 0, 0);
+                        return;
+                    }
+                    if (!(v instanceof Array)) v = [v, v, v];
+                    imageData[i  ] = v[0] * 255;
+                    imageData[i+1] = v[1] * 255;
+                    imageData[i+2] = v[2] * 255;
+                    imageData[i+3] = 255;
+                }
+                ctx.putImageData(image, 0, 0);
+
+                if (showFps.checked) {
+                    const t = `${frameRate.toFixed(1)}FPS ${timeDelta.toFixed(2)}ms ${elapsed.toFixed(1)}`;
+                    ctx.strokeText(t, 4, 24);
+                    ctx.fillText(t, 4, 24);
+                }
+
+                requestHandle = window.requestAnimationFrame(draw);
+                last = timestamp;
+            }
+            requestHandle = window.requestAnimationFrame(draw);
+        }
+
+        document.querySelector("#run").addEventListener("click", start);
+        document.querySelector("#stop").addEventListener("click", stop);
+        document.querySelector("#loadexample").addEventListener("click", () => {
+            if (
+                codeArea.value.trim() === "" ||
+                examples.includes(codeArea.value) ||
+                confirm("are you sure? this will overwrite whatever you're currently working on!")
+            ) {
+                codeArea.value = utils.choice(examples.filter(e => e !== codeArea.value));
+                start();
+            }
+        });
+        codeArea.addEventListener("keydown", e => {
+            if (e.ctrlKey && (e.keyCode === 13 || e.key === "s")) {
+                start();
+                e.preventDefault();
+                return true;
+            }
+        });
+    </script>
+</body>
+</html>
