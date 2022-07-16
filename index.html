@@ -201,6 +201,19 @@
                 return true;
             }
         });
+
+        codeArea.addEventListener("input", e => {
+            window.location.hash = encodeURIComponent(e.target.value);
+        });
+        window.addEventListener("hashchange", e => {
+            if (window.location.hash.length > 0)
+                codeArea.value = decodeURIComponent(window.location.hash.slice(1));
+        });
+
+        if (window.location.hash.length > 0) {
+            codeArea.value = decodeURIComponent(window.location.hash.slice(1));
+            start();
+        }
     </script>
 </body>
 </html>
