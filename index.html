@@ -14,7 +14,7 @@
         input, #codearea, canvas {
             border: 2px solid white;
         }
-        #codearea, code, #error {
+        #codearea, .template, #error {
             display: block;
             font-family: "Fira Code", monospace;
         }
@@ -70,9 +70,27 @@
 
     <pre style="display: none;"><code id="error"></code></pre>
 
-    <code>(x, y, t) => {</code>
+    <code class="template">(x, y, t) => {</code>
     <textarea id="codearea" cols="60" rows="10" spellcheck="false"></textarea>
-    <code>}</code>
+    <code class="template">}</code>
+
+    <div style="width: 30em;">
+        <h2>what is this...?</h2>
+        <p>this is 640x480. you are given a 640x480 screen, and a field to write a function that will return a color value for any point on the screen (plus the elapsed time in seconds). take a look at the examples!</p>
+        <p>yes, this is kind of like writing fragment shaders, except in javascript.</p>
+        <hr>
+        <p>the simplest program would be an empty one, though that'll just give you a black screen. you can return any number between 0 and 1 for grayscale, or an array of three numbers 0..1 for a color. for example, you can write <code>return x/640</code> (we divide x by the total width to get a number between 0 and 1) and get a gradient going from the left to the right. mess around with it!</p>
+        <p>notice how the URL changes every time you change the code - when you write something and want to share it, just share the link! (or just the code, whatever you prefer)</p>
+        <hr>
+        <p>640x480 has some built-in utility functions, accessible under <code>this</code>:</p>
+        <ul>
+            <li><code>this.cmp(v, t, e)</code>: compare - is v equal to t within margin e</li>
+            <li><code>this.choice(a)</code>: pick random element from array a</li>
+            <li><code>this.fmod(n, m)</code>: modulo with divide (<code>n%m/m</code>) - modulo that returns 0..1</li>
+            <li><code>this.brect(x, y, w, h)</code>: check if (x,y) is within (w,h) - make a rectangle</li>
+            <li><code>this.rot(x, y, dir)</code>: vector rotate - rotate (x,y) by dir degrees</li>
+        </ul>
+    </div>
     
     <script>
         const utils = Object.freeze({
@@ -82,9 +100,9 @@
             brect: (x, y, w, h) => x < w && y < h && x > 0 && y > 0, // make a rectangle or check if point is within w, h
             rot: (x, y, dir) => { // vector rotate - shoutouts to https://github.com/somebody1234 for helping me out with this!!!
                 dir = dir/180*Math.PI;
-                const a = Math.sin(dir);
-                const b = Math.cos(dir);
-                return [(a*y)+(b*x), (b*y)+(a*x)];
+                const a = Math.cos(dir);
+                const b = Math.sin(dir);
+                return [(a*y)+(-b*x), (b*y)+(a*x)];
             }
         });
 
