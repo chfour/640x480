@@ -77,6 +77,12 @@
             choice: a => a[Math.random()*a.length<<0], // randomly choose from array a
             fmod: (n, m) => (n%m)/m, // modulo with divide - returns 0..1
             brect: (x, y, w, h) => x < w && y < h && x > 0 && y > 0, // make a rectangle or check if point is within w, h
+            rot: (x, y, dir) => { // vector rotate - shoutouts to https://github.com/somebody1234 for helping me out with this!!!
+                dir = dir/180*Math.PI;
+                const a = Math.sin(dir);
+                const b = Math.cos(dir);
+                return [(a*y)+(b*x), (b*y)+(a*x)];
+            }
         });
 
         const examples = [
@@ -87,7 +93,7 @@
             "/* noise */ return Math.random()",
             "/* bouncing rectangle */ return this.brect((x - t*200%690)+50, y - (1-Math.abs(Math.sin(t*2)))*300-130, 50, 50)"
         ];
-        
+
         const codeArea = document.querySelector("textarea#codearea");
         const errorOutput = document.querySelector("#error");
 
