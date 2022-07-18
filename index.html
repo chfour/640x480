@@ -92,8 +92,14 @@
             "vertical stripes": "return this.fmod(x, 64) > 0.5",
             "horizontal stripes": "return this.fmod(y, 48) > 0.5",
             "checkerboard": "s=64; return this.fmod(x, s) > 0.5 && this.fmod(y, s) > 0.5 || this.fmod(x, s) < 0.5 && this.fmod(y, s) < 0.5",
+            "better checkerboard by somebody1234": "s=64; return !(Math.round(this.fmod(x, s)) ^ Math.round(this.fmod(y, s)))",
             "noise": "return Math.random()",
-            "bouncing rectangle": "return this.brect((x - t*200%690)+50, y - (1-Math.abs(Math.sin(t*2)))*300-130, 50, 50)"
+            "bouncing rectangle": "return this.brect((x - t*200%690)+50, y - (1-Math.abs(Math.sin(t*2)))*300-130, 50, 50)",
+            "mandelbrot set (can be slow) by somebody1234": "let zx=x0=x/240-2,zy=y0=y/240-1;\nfor(let i=0;i<50;i++){\n  [zx,zy]=[zx*zx-zy*zy+x0,zx*zy*2+y0];\n  if(zx*zx+zy*zy>100){return i/16}\n}",
+            "colorized mandelbrot set by somebody1234": "let zx=x0=x/240-2,zy=y0=y/240-1;\nfor(let i=0;i<50;i++){\n  [zx,zy]=[zx*zx-zy*zy+x0,zx*zy*2+y0];\n  if(zx*zx+zy*zy>100){return [i/8,1-Math.abs(6-i)/16,(16-i)/16]}\n}",
+            "controllable dot (WASD) by somebody1234": "globalThis.p??=(()=>{\n  const MSP=50; let p={x:0,y:0},pvx=0,pvy=0,k={};\n  document.addEventListener('keydown',e=>k[e.key]=1),\n  document.addEventListener('keyup',e=>k[e.key]=0),\n  requestAnimationFrame(f=()=>{\n    pvx=Math.max(-MSP,Math.min(MSP,pvx*.95+(k.d?k.a?0:1:k.a?-1:0)));\n    pvy=Math.max(-MSP,Math.min(MSP,pvy*.95+(k.s?k.w?0:1:k.w?-1:0)));\n    p.x=(p.x+pvx+640)%640;p.y=(p.y+pvy+480)%480;\n    requestAnimationFrame(f);\n  });\n  return p;\n})();\nreturn (x-globalThis.p.x)**2+(y-globalThis.p.y)**2<100?0.9:0.1;",
+            "sierpinski carpet by somebody1234": "while(x||y){\n  if (x%3===1&&y%3===1){return 0;}\n  x=0|x/3;y=0|y/3;\n}\nreturn 1;",
+            "sierpinski triangle by somebody1234": "return ((y+x>>1)&x)===x"
         };
 
         const codeArea = document.querySelector("textarea#codearea");
