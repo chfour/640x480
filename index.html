@@ -44,7 +44,7 @@
         }
         #gridwrap > canvas { grid-area: c; }
         #controls { margin: 0.5em 0; }
-        button {
+        button, select {
             background-color: transparent;
             color: white;
             border: 1px solid white;
@@ -61,7 +61,9 @@
     <div id="controls">
         <button id="run">run</button>
         <button id="stop">stop</button>
-        <button id="loadexample">load random example</button>
+        <select id="loadexample">
+            <option value="">load an example...</option>
+        </select>
         <input type="checkbox" id="showfps" checked="true"> <label for="showfps">show FPS</label>
     </div>
 
@@ -85,14 +87,14 @@
             }
         });
 
-        const examples = [
-            "/* sine wave */ return this.cmp(y, (1+Math.sin(t + x/34))/2 * 480, 10)",
-            "/* vertical stripes */ return this.fmod(x, 64) > 0.5",
-            "/* horizontal stripes */ return this.fmod(y, 48) > 0.5",
-            "/* checkerboard */ s=64; return this.fmod(x, s) > 0.5 && this.fmod(y, s) > 0.5 || this.fmod(x, s) < 0.5 && this.fmod(y, s) < 0.5",
-            "/* noise */ return Math.random()",
-            "/* bouncing rectangle */ return this.brect((x - t*200%690)+50, y - (1-Math.abs(Math.sin(t*2)))*300-130, 50, 50)"
-        ];
+        const examples = {
+            "sine wave": "return this.cmp(y, (1+Math.sin(t + x/34))/2 * 480, 10)",
+            "vertical stripes": "return this.fmod(x, 64) > 0.5",
+            "horizontal stripes": "return this.fmod(y, 48) > 0.5",
+            "checkerboard": "s=64; return this.fmod(x, s) > 0.5 && this.fmod(y, s) > 0.5 || this.fmod(x, s) < 0.5 && this.fmod(y, s) < 0.5",
+            "noise": "return Math.random()",
+            "bouncing rectangle": "return this.brect((x - t*200%690)+50, y - (1-Math.abs(Math.sin(t*2)))*300-130, 50, 50)"
+        };
 
         const codeArea = document.querySelector("textarea#codearea");
         const errorOutput = document.querySelector("#error");
@@ -190,16 +192,28 @@
 
         document.querySelector("#run").addEventListener("click", start);
         document.querySelector("#stop").addEventListener("click", stop);
-        document.querySelector("#loadexample").addEventListener("click", () => {
+
+        const loadExample = document.querySelector("#loadexample");
+        Object.keys(examples).forEach(k => {
+            const opt = document.createElement("option");
+            opt.setAttribute("value", k);
+            opt.textContent = k;
+            loadExample.appendChild(opt);
+        });
+
+        loadExample.addEventListener("input", e => {
+            console.debug(e.target.value);
             if (
                 codeArea.value.trim() === "" ||
-                examples.includes(codeArea.value) ||
+                Object.values(examples).includes(codeArea.value) ||
                 confirm("are you sure? this will overwrite whatever you're currently working on!")
             ) {
-                codeArea.value = utils.choice(examples.filter(e => e !== codeArea.value));
+                codeArea.value = examples[e.target.value];
                 start();
             }
+            e.target.value = "";
         });
+
         codeArea.addEventListener("keydown", e => {
             if (e.ctrlKey && (e.keyCode === 13 || e.key === "s")) {
                 start();
