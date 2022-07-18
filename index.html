@@ -45,7 +45,7 @@
         #gridwrap > canvas { grid-area: c; }
         #controls { margin: 0.5em 0; }
         button, select {
-            background-color: transparent;
+            background-color: black;
             color: white;
             border: 1px solid white;
         }
@@ -61,7 +61,7 @@
     <div id="controls">
         <button id="run">run</button>
         <button id="stop">stop</button>
-        <select id="loadexample">
+        <select id="loadexample" style="width: 10em;">
             <option value="">load an example...</option>
         </select>
         <input type="checkbox" id="showfps" checked="true"> <label for="showfps">show FPS</label>
